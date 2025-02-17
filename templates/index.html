@@ -1,85 +1,170 @@
-<!-- templates/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YOLO Object Detection & Segmentation</title>
+    <title>Advanced YOLO Vision Analytics</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
+        .gradient-bg {
+            background: linear-gradient(120deg, #1a365d 0%, #2d3748 100%);
+        }
         .model-btn.active {
-            background-color: #4CAF50;
-            color: white;
+            background: linear-gradient(90deg, #4CAF50, #45a049);
+            transform: translateY(1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
         .upload-area {
-            border: 2px dashed #ccc;
-            padding: 20px;
-            text-align: center;
-            cursor: pointer;
+            border: 2px dashed #4a5568;
+            background: rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
         }
         .upload-area:hover {
             border-color: #4CAF50;
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+        .stats-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .confidence-slider {
+            -webkit-appearance: none;
+            height: 8px;
+            border-radius: 4px;
+            background: #4a5568;
+            outline: none;
+        }
+        .confidence-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
         }
     </style>
 </head>
-<body class="bg-gray-100">
+<body class="gradient-bg min-h-screen text-gray-100">
     <div class="container mx-auto px-4 py-8">
-        <h1 class="text-4xl font-bold text-center mb-8">YOLO Computer Vision Demo</h1>
-        
-        <!-- Model Selection Buttons -->
-        <div class="flex justify-center space-x-4 mb-8">
-            <button id="detectionBtn" 
-                    class="model-btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded active">
-                Object Detection
-            </button>
-            <button id="segmentationBtn" 
-                    class="model-btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                Segmentation
-            </button>
-        </div>
+        <header class="text-center mb-12">
+            <h1 class="text-5xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500">
+                YOLO Vision Analytics
+            </h1>
+            <p class="text-xl text-gray-300">Advanced Object Detection & Segmentation Platform</p>
+        </header>
 
-        <!-- Webcam Control Buttons -->
-        <div class="flex justify-center space-x-4 mb-8">
-            <button id="startWebcamBtn" 
-                    class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
-                Start Webcam
-            </button>
-            <button id="stopWebcamBtn" 
-                    class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
-                Stop Webcam
-            </button>
-        </div>
-
-        <!-- File Upload Area -->
-        <div class="mb-8">
-            <div id="upload-area" class="upload-area rounded-lg">
-                <p class="text-lg mb-2">Drag and drop files here or click to upload</p>
-                <p class="text-sm text-gray-500">Supported formats: PNG, JPG, JPEG, GIF, MP4, AVI</p>
-                <input type="file" id="file-input" class="hidden" accept=".png,.jpg,.jpeg,.gif,.mp4,.avi">
+        <!-- Settings Panel -->
+        <div class="bg-gray-800 rounded-lg p-6 mb-8 shadow-xl">
+            <h2 class="text-2xl font-bold mb-4">Detection Settings</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Model Selection -->
+                <div>
+                    <h3 class="text-lg mb-3">Model Type</h3>
+                    <div class="flex space-x-4">
+                        <button id="detectionBtn" 
+                                class="model-btn flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 active">
+                            🎯 Object Detection
+                        </button>
+                        <button id="segmentationBtn" 
+                                class="model-btn flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200">
+                            ✂️ Segmentation
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Confidence Threshold -->
+                <div>
+                    <h3 class="text-lg mb-3">Confidence Threshold</h3>
+                    <input type="range" id="confidenceThreshold" 
+                           class="confidence-slider w-full" 
+                           min="0" max="100" value="50">
+                    <div class="flex justify-between text-sm mt-2">
+                        <span>0%</span>
+                        <span id="confidenceValue">50%</span>
+                        <span>100%</span>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Video/Image Display Area -->
-        <div class="relative w-full max-w-3xl mx-auto">
-            <img id="video_feed" 
-                 class="w-full rounded-lg shadow-lg hidden"
-                 alt="Video Feed">
-            
-            <img id="processed_image"
-                 class="w-full rounded-lg shadow-lg hidden"
-                 alt="Processed Image">
-                 
-            <video id="processed_video"
-                   class="w-full rounded-lg shadow-lg hidden"
-                   controls>
-                Your browser does not support the video tag.
-            </video>
-            
-            <div id="loading" 
-                 class="hidden absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
-                <div class="spinner-border text-white" role="status">
-                    <span class="visually-hidden">Loading...</span>
+        <!-- Input Controls -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            <!-- Webcam Controls -->
+            <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
+                <h3 class="text-xl font-bold mb-4">📹 Webcam Input</h3>
+                <div class="flex space-x-4">
+                    <button id="startWebcamBtn" 
+                            class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200">
+                        Start Webcam
+                    </button>
+                    <button id="stopWebcamBtn" 
+                            class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200">
+                        Stop Webcam
+                    </button>
+                </div>
+            </div>
+
+            <!-- File Upload -->
+            <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
+                <h3 class="text-xl font-bold mb-4">📁 File Upload</h3>
+                <div id="upload-area" class="upload-area rounded-lg p-6 cursor-pointer transition-all duration-200">
+                    <p class="text-lg mb-2">Drag and drop files here or click to upload</p>
+                    <p class="text-sm text-gray-400">Supports: PNG, JPG, JPEG, GIF, MP4, AVI</p>
+                    <input type="file" id="file-input" class="hidden" accept=".png,.jpg,.jpeg,.gif,.mp4,.avi">
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Display Area -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Video/Image Display -->
+            <div class="lg:col-span-2">
+                <div class="relative bg-gray-800 rounded-lg p-4 shadow-xl">
+                    <img id="video_feed" class="w-full rounded-lg shadow-lg hidden" alt="Video Feed">
+                    <img id="processed_image" class="w-full rounded-lg shadow-lg hidden" alt="Processed Image">
+                    <video id="processed_video" class="w-full rounded-lg shadow-lg hidden" controls>
+                        Your browser does not support the video tag.
+                    </video>
+                    
+                    <div id="loading" class="hidden absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
+                        <div class="spinner-border text-white" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Panel -->
+            <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
+                <h3 class="text-xl font-bold mb-4">📊 Analytics</h3>
+                
+                <!-- Detection Stats -->
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="stats-card rounded-lg p-4">
+                        <h4 class="text-sm text-gray-400 mb-1">Objects Detected</h4>
+                        <p id="objectCount" class="text-2xl font-bold">0</p>
+                    </div>
+                    <div class="stats-card rounded-lg p-4">
+                        <h4 class="text-sm text-gray-400 mb-1">Avg Confidence</h4>
+                        <p id="avgConfidence" class="text-2xl font-bold">0%</p>
+                    </div>
+                </div>
+
+                <!-- Detection Chart -->
+                <div class="mb-6">
+                    <canvas id="detectionChart" class="w-full h-48"></canvas>
+                </div>
+
+                <!-- Detection List -->
+                <div class="bg-gray-900 rounded-lg p-4 max-h-64 overflow-y-auto">
+                    <h4 class="text-lg font-bold mb-3">Detection List</h4>
+                    <ul id="detectionList" class="space-y-2">
+                        <!-- Detection items will be added here dynamically -->
+                    </ul>
                 </div>
             </div>
         </div>
@@ -87,6 +172,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize all the existing elements
             const detectionBtn = document.getElementById('detectionBtn');
             const segmentationBtn = document.getElementById('segmentationBtn');
             const startWebcamBtn = document.getElementById('startWebcamBtn');
@@ -97,22 +183,77 @@
             const loading = document.getElementById('loading');
             const uploadArea = document.getElementById('upload-area');
             const fileInput = document.getElementById('file-input');
+            const confidenceSlider = document.getElementById('confidenceThreshold');
+            const confidenceValue = document.getElementById('confidenceValue');
+
+            // Initialize Chart.js
+            const ctx = document.getElementById('detectionChart').getContext('2d');
+            const detectionChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Detections by Class',
+                        data: [],
+                        backgroundColor: 'rgba(76, 175, 80, 0.5)',
+                        borderColor: 'rgba(76, 175, 80, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: '#9ca3af'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#9ca3af'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#9ca3af'
+                            }
+                        }
+                    }
+                }
+            });
             
             let currentModelType = 'detection';
             let isWebcamActive = false;
 
-            // File Upload Handling
+            // Confidence Threshold Handler
+            confidenceSlider.addEventListener('input', function() {
+                confidenceValue.textContent = `${this.value}%`;
+                // You'll need to implement the backend functionality to handle confidence threshold
+            });
+
+            // File Upload Handling with enhanced visual feedback
             uploadArea.addEventListener('click', () => fileInput.click());
+            uploadArea.addEventListener('dragenter', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = '#4CAF50';
+                uploadArea.style.transform = 'scale(1.02)';
+            });
             uploadArea.addEventListener('dragover', (e) => {
                 e.preventDefault();
                 uploadArea.style.borderColor = '#4CAF50';
             });
             uploadArea.addEventListener('dragleave', () => {
-                uploadArea.style.borderColor = '#ccc';
+                uploadArea.style.borderColor = '#4a5568';
+                uploadArea.style.transform = 'scale(1)';
             });
             uploadArea.addEventListener('drop', (e) => {
                 e.preventDefault();
-                uploadArea.style.borderColor = '#ccc';
+                uploadArea.style.borderColor = '#4a5568';
+                uploadArea.style.transform = 'scale(1)';
                 const files = e.dataTransfer.files;
                 if (files.length) handleFile(files[0]);
             });
@@ -121,12 +262,14 @@
                 if (e.target.files.length) handleFile(e.target.files[0]);
             });
 
+            // Enhanced file handling with analytics update
             async function handleFile(file) {
                 loading.classList.remove('hidden');
                 
                 const formData = new FormData();
                 formData.append('file', file);
                 formData.append('model_type', currentModelType);
+                formData.append('confidence_threshold', confidenceSlider.value);
                 
                 try {
                     const response = await fetch('/upload', {
@@ -142,6 +285,9 @@
                         if (data.type === 'image') {
                             processedImage.src = `/uploads/${data.filename}`;
                             processedImage.classList.remove('hidden');
+                            
+                            // Update analytics
+                            updateAnalytics(data.analytics);
                         } else {
                             processedVideo.src = `/uploads/${data.filename}`;
                             processedVideo.classList.remove('hidden');
@@ -154,16 +300,47 @@
                 }
             }
 
-            // Webcam Control
+            // Function to update analytics display
+            function updateAnalytics(data) {
+                if (!data) return;
+                
+                // Update counters
+                document.getElementById('objectCount').textContent = data.total_objects || 0;
+                document.getElementById('avgConfidence').textContent = 
+                    `${((data.average_confidence || 0) * 100).toFixed(1)}%`;
+
+                // Update chart
+                detectionChart.data.labels = data.classes || [];
+                detectionChart.data.datasets[0].data = data.class_counts || [];
+                detectionChart.update();
+
+                // Update detection list
+                const detectionList = document.getElementById('detectionList');
+                detectionList.innerHTML = '';
+                (data.detections || []).forEach(detection => {
+                    const li = document.createElement('li');
+                    li.className = 'flex justify-between items-center bg-gray-800 p-2 rounded';
+                    li.innerHTML = `
+                        <span>${detection.class}</span>
+                        <span class="text-green-400">${(detection.confidence * 100).toFixed(1)}%</span>
+                    `;
+                    detectionList.appendChild(li);
+                });
+            }
+
+            // Enhanced webcam control with analytics
             async function startWebcam() {
                 if (!isWebcamActive) {
                     try {
                         const response = await fetch('/start_webcam');
                         if (response.ok) {
                             hideAllMediaElements();
-                            videoFeed.src = `/video_feed/${currentModelType}`;
+                            videoFeed.src = `/video_feed/${currentModelType}?confidence=${confidenceSlider.value}`;
                             videoFeed.classList.remove('hidden');
                             isWebcamActive = true;
+                            startWebcamBtn.classList.add('bg-opacity-50');
+                            stopWebcamBtn.classList.remove('bg-opacity-50');
+                            startWebcamAnalytics();
                         }
                     } catch (error) {
                         console.error('Error starting webcam:', error);
@@ -178,11 +355,43 @@
                         if (response.ok) {
                             videoFeed.classList.add('hidden');
                             isWebcamActive = false;
+                            startWebcamBtn.classList.remove('bg-opacity-50');
+                            stopWebcamBtn.classList.add('bg-opacity-50');
+                            stopWebcamAnalytics();
                         }
                     } catch (error) {
                         console.error('Error stopping webcam:', error);
                     }
                 }
+            }
+
+            // Real-time analytics updating
+            let analyticsInterval;
+
+            function startWebcamAnalytics() {
+                analyticsInterval = setInterval(async () => {
+                    try {
+                        const response = await fetch('/get_frame_analytics');
+                        const data = await response.json();
+                        updateAnalytics(data);
+                    } catch (error) {
+                        console.error('Error fetching analytics:', error);
+                    }
+                }, 1000); // Update every second
+            }
+
+            function stopWebcamAnalytics() {
+                if (analyticsInterval) {
+                    clearInterval(analyticsInterval);
+                }
+                // Reset analytics displays
+                updateAnalytics({
+                    total_objects: 0,
+                    average_confidence: 0,
+                    classes: [],
+                    class_counts: [],
+                    detections: []
+                });
             }
 
             function hideAllMediaElements() {
@@ -194,7 +403,7 @@
             async function switchModel(modelType) {
                 currentModelType = modelType;
                 if (isWebcamActive) {
-                    videoFeed.src = `/video_feed/${modelType}`;
+                    videoFeed.src = `/video_feed/${modelType}?confidence=${confidenceSlider.value}`;
                 }
                 
                 // Update button styles
@@ -209,11 +418,76 @@
                 }
             }
 
-            // Event Listeners
+            // Initialize event listeners
             detectionBtn.addEventListener('click', () => switchModel('detection'));
             segmentationBtn.addEventListener('click', () => switchModel('segmentation'));
             startWebcamBtn.addEventListener('click', startWebcam);
             stopWebcamBtn.addEventListener('click', stopWebcam);
+
+            // Add keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                if (e.code === 'Space') {
+                    e.preventDefault();
+                    if (isWebcamActive) {
+                        stopWebcam();
+                    } else {
+                        startWebcam();
+                    }
+                } else if (e.code === 'KeyD') {
+                    switchModel('detection');
+                } else if (e.code === 'KeyS') {
+                    switchModel('segmentation');
+                }
+            });
+
+            // Add screenshot functionality
+            const takeScreenshot = async () => {
+                if (isWebcamActive) {
+                    try {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = videoFeed.width;
+                        canvas.height = videoFeed.height;
+                        canvas.getContext('2d').drawImage(videoFeed, 0, 0);
+                        
+                        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                        const formData = new FormData();
+                        formData.append('file', blob, 'screenshot.png');
+                        formData.append('model_type', currentModelType);
+                        formData.append('confidence_threshold', confidenceSlider.value);
+                        
+                        await handleFile(blob);
+                    } catch (error) {
+                        console.error('Error taking screenshot:', error);
+                    }
+                }
+            };
+
+            // Add screenshot button
+            const screenshotBtn = document.createElement('button');
+            screenshotBtn.className = 'absolute bottom-4 right-4 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full shadow-lg transition-all duration-200';
+            screenshotBtn.innerHTML = '📸';
+            screenshotBtn.addEventListener('click', takeScreenshot);
+            document.querySelector('.relative').appendChild(screenshotBtn);
+
+            // Add keyboard shortcut for screenshot
+            document.addEventListener('keydown', (e) => {
+                if (e.code === 'KeyP') {
+                    e.preventDefault();
+                    takeScreenshot();
+                }
+            });
+
+            // Initialize tooltips for keyboard shortcuts
+            const tooltips = [
+                { element: startWebcamBtn, text: 'Space: Toggle webcam' },
+                { element: detectionBtn, text: 'D: Switch to detection' },
+                { element: segmentationBtn, text: 'S: Switch to segmentation' },
+                { element: screenshotBtn, text: 'P: Take screenshot' }
+            ];
+
+            tooltips.forEach(({ element, text }) => {
+                element.setAttribute('title', text);
+            });
         });
     </script>
 
